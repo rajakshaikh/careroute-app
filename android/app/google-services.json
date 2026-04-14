@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "91647910264",
+    "project_id": "careroute-77f0c",
+    "storage_bucket": "careroute-77f0c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:91647910264:android:9c021fa6cf19769368288d",
+        "android_client_info": {
+          "package_name": "com.example.careroute_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCzsZBcnBWzPoMzRn57iHF-zU2ZX2DOTxQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
