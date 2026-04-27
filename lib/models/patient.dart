@@ -7,10 +7,13 @@ class Patient {
   final String condition;
   final int lastVisitDays;
   final String address;
-  final String chwId;
+  //final String chwId;
   final bool visited;
   final double lat;
   final double lng;
+  final String notes;
+  final bool flaggedByANM;
+  final String regionId;
 
   Patient({
     required this.id,
@@ -19,10 +22,14 @@ class Patient {
     required this.condition,
     required this.lastVisitDays,
     required this.address,
-    required this.chwId,
+    //required this.chwId,
     required this.visited,
     required this.lat,
     required this.lng,
+    required this.notes,
+    required this.flaggedByANM,
+    required this.regionId
+
   });
 
   // Convert Firestore document → Patient object
@@ -34,10 +41,13 @@ class Patient {
       condition:     data['condition'] ?? '',
       lastVisitDays: (data['lastVisitDays'] ?? 0).toInt(),
       address:       data['address'] ?? '',
-      chwId:         data['chwId'] ?? '',
+      //chwId:         data['chwId'] ?? '',
       visited:       data['visited'] ?? false,
       lat:           (data['lat'] ?? 0.0).toDouble(),
       lng:           (data['lng'] ?? 0.0).toDouble(),
+      notes:         data['notes'] ?? '',
+      flaggedByANM:  data['flaggedByANM'] ?? false,
+      regionId:      data['regionId'] ?? '',
     );
   }
 
