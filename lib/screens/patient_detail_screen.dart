@@ -184,9 +184,7 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
   }
 
   Future<void> generateReport() async {
-    setState(() {
-      isGeneratingReport = true;
-    });
+    setState(() { isGeneratingReport = true; });
 
     try {
       final report = await GeminiService.generateMedicalReport(
@@ -195,29 +193,38 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
         widget.patient.condition,
       );
 
-      setState(() {
-        aiReport = report;
+      setState(() { aiReport = report; });
+
+      // CREATE THE BATCH
+      WriteBatch batch = FirebaseFirestore.instance.batch();
+      DocumentReference patientRef = FirebaseFirestore.instance
+          .collection('patients')
+          .doc(widget.patient.id);
+      DocumentReference reportHistoryRef = patientRef.collection('reports').doc();
+
+      // ✅ STEP 1: Update Main Doc (FOR THE DASHBOARD)
+      // We name the key 'aiReport' to match your React code exactly
+      batch.update(patientRef, {
+        'aiReport': report,
+        'voiceNote': spokenText,
+        'visited': true,
+        'lastVisitDays': 0,
       });
 
-      // ✅ FIXED: store as REPORT HISTORY (NOT overwrite patient doc)
-      await FirebaseFirestore.instance
-          .collection('patients')
-          .doc(widget.patient.id)
-          .collection('reports')
-          .add({
-            'summary': report['summary'],
-            'symptoms': report['symptoms'],
-            'action_taken': report['action_taken'],
-            'recommendation': report['recommendation'],
-            'time': DateTime.now().toIso8601String(),
-          });
+      // ✅ STEP 2: Save to History (FOR ARCHIVE)
+      batch.set(reportHistoryRef, {
+        ...report,
+        'time': DateTime.now().toIso8601String(),
+      });
+
+      await batch.commit();
+
+      debugPrint("✅ Report Synced to Cloud & Dashboard!");
     } catch (e) {
       debugPrint("Report Error: $e");
     }
 
-    setState(() {
-      isGeneratingReport = false;
-    });
+    setState(() { isGeneratingReport = false; });
   }
 
   @override
@@ -456,14 +463,18 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   ElevatedButton.icon(
-                    onPressed: spokenText.trim().isEmpty || isGeneratingReport
+                    // Safety: Disable button if already generating or if input text is empty
+                    onPressed: (isGeneratingReport || spokenText.trim().isEmpty)
                         ? null
                         : generateReport,
                     icon: isGeneratingReport
                         ? const SizedBox(
                             height: 18,
                             width: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
                           )
                         : const Icon(Icons.document_scanner),
                     label: Text(
@@ -480,7 +491,9 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  if (aiReport != null)
+
+                  // PROTECTION: Only show the report box if aiReport is NOT null AND we aren't currently generating
+                  if (aiReport != null && !isGeneratingReport)
                     Container(
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
@@ -499,19 +512,42 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
                             ),
                           ),
                           const SizedBox(height: 12),
-                          Text('Summary: ${aiReport!['summary'] ?? ''}'),
-                          const SizedBox(height: 8),
-                          Text('Symptoms: ${aiReport!['symptoms'] ?? ''}'),
-                          const SizedBox(height: 8),
-                          Text('Action: ${aiReport!['action_taken'] ?? ''}'),
+                          // The '??' is your insurance policy against null fields
+                          Text(
+                            'Summary: ${aiReport!['summary'] ?? "Processing..."}',
+                          ),
                           const SizedBox(height: 8),
                           Text(
-                            'Recommendation: ${aiReport!['recommendation'] ?? ''}',
+                            'Symptoms: ${aiReport!['symptoms'] ?? "No symptoms noted"}',
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Action: ${aiReport!['action_taken'] ?? "Standard protocol"}',
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Recommendation: ${aiReport!['recommendation'] ?? "Monitor status"}',
+                            style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
                         ],
                       ),
                     )
+                  else if (isGeneratingReport)
+                    // Show a helpful state while the user waits
+                    const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(20),
+                        child: Text(
+                          "Gemini is analyzing your notes...",
+                          style: TextStyle(
+                            fontStyle: FontStyle.italic,
+                            color: Colors.grey,
+                          ),
+                        ),
+                      ),
+                    )
                   else
+                    // Initial State
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
@@ -519,15 +555,15 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
                         borderRadius: BorderRadius.circular(14),
                       ),
                       child: const Text(
-                        'No AI report generated yet. Record notes and tap Generate AI Report to see the summary.',
+                        'No AI report generated yet. Record notes and tap Generate AI Report.',
                         style: TextStyle(color: Colors.black54),
                       ),
                     ),
                 ],
               ),
             ),
-
             const SizedBox(height: 24),
+            
             _sectionHeader('Saved Reports'),
             StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
