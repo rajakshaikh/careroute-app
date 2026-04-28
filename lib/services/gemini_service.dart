@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-// DO NOT paste your long key here anymore! 
+// DO NOT paste your long key here anymore!
 // This line below tells the app to go look inside the .env file.
 final String apiKey = dotenv.env['GEMINI_API_KEY'] ?? '';
 

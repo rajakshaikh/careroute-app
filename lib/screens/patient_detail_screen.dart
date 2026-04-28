@@ -96,12 +96,53 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
     );
   }
 
+  @override//line 99 this is what u gotta change
+  void initState() {
+    super.initState();
+    loadPatientAIData();
+  }
+
+ Future<void> loadPatientAIData() async {
+    final docRef = FirebaseFirestore.instance
+        .collection('patients')
+        .doc(widget.patient.id);
+
+    final doc = await docRef.get();
+    if (!doc.exists) return;
+
+    final data = doc.data();
+    if (data == null) return;
+
+    // ✅ FIX 1: Look for 'aiChecklist' (This matches your save logic)
+    final List<String>? savedChecklist = data['aiChecklist'] != null
+        ? List<String>.from(data['aiChecklist'] as List<dynamic>)
+        : null;
+
+    Map<String, dynamic>? savedReport;
+    if (data['aiReport'] != null) {
+      final dynamic reportValue = data['aiReport'];
+      if (reportValue is Map<String, dynamic>) {
+        savedReport = reportValue;
+      } else if (reportValue is Map) {
+        savedReport = Map<String, dynamic>.from(reportValue);
+      }
+    }
+
+    if (mounted) {
+      setState(() {
+        // ✅ FIX 2: Ensure the variable names match your State
+        if (savedChecklist != null) checklist = savedChecklist;
+        if (savedReport != null) aiReport = savedReport;
+      });
+    }
+  }
+
   Future<void> loadChecklist() async {
     if (!mounted) return;
 
     setState(() {
       isLoading = true;
-      checklist = [];
+      // Don't clear it immediately if you want to keep showing the old one while loading
     });
 
     try {
@@ -109,47 +150,28 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
           .collection('patients')
           .doc(widget.patient.id);
 
-      final doc = await docRef.get();
-
-      // ✅ 1. CHECK CACHE
-      if (doc.exists && doc.data()!['aiChecklist'] != null) {
-        final saved = List<String>.from(doc.data()!['aiChecklist']);
-
-        if (mounted) {
-          setState(() {
-            checklist = saved;
-            isLoading = false;
-          });
-        }
-
-        debugPrint("Loaded from cache ✅");
-        return;
-      }
-
-      // ✅ 2. CALL GEMINI
+      // ✅ 1. CALL GEMINI (Always get fresh data if they click the button)
       final result = await GeminiService.generateChecklist(
         widget.patient.condition,
         widget.patient.lastVisitDays,
       );
 
+      // result is a List<String> coming from your service
       if (mounted) {
         setState(() {
           checklist = result;
         });
       }
 
-      // ✅ 3. SAVE TO FIRESTORE
+      // ✅ 2. SAVE TO FIRESTORE using the SAME KEY as loadPatientAIData
       await docRef.update({'aiChecklist': result});
 
       debugPrint("Saved to Firestore ✅");
     } catch (e) {
       debugPrint("Checklist Error: $e");
-
       if (mounted) {
         setState(() {
-          checklist = [
-            "Error: Could not generate checklist. Check internet/API.",
-          ];
+          checklist = ["Error: Could not generate checklist. Try again."];
         });
       }
     }
