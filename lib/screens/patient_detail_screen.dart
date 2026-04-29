@@ -130,7 +130,7 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
 
     if (mounted) {
       setState(() {
-        // ✅ FIX 2: Ensure the variable names match your State
+   
         if (savedChecklist != null) checklist = savedChecklist;
         if (savedReport != null) aiReport = savedReport;
       });
@@ -142,7 +142,7 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
 
     setState(() {
       isLoading = true;
-      // Don't clear it immediately if you want to keep showing the old one while loading
+      
     });
 
     try {
@@ -150,20 +150,20 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
           .collection('patients')
           .doc(widget.patient.id);
 
-      // ✅ 1. CALL GEMINI (Always get fresh data if they click the button)
+    
       final result = await GeminiService.generateChecklist(
         widget.patient.condition,
         widget.patient.lastVisitDays,
       );
 
-      // result is a List<String> coming from your service
+
       if (mounted) {
         setState(() {
           checklist = result;
         });
       }
 
-      // ✅ 2. SAVE TO FIRESTORE using the SAME KEY as loadPatientAIData
+   
       await docRef.update({'aiChecklist': result});
 
       debugPrint("Saved to Firestore ✅");
@@ -199,7 +199,6 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
     }
   }
 
-  // 👉 ALSO add this right below it
   void stopListening() {
     speech.stop();
     setState(() => isListening = false);
@@ -217,15 +216,13 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
 
       setState(() { aiReport = report; });
 
-      // CREATE THE BATCH
+    
       WriteBatch batch = FirebaseFirestore.instance.batch();
       DocumentReference patientRef = FirebaseFirestore.instance
           .collection('patients')
           .doc(widget.patient.id);
       DocumentReference reportHistoryRef = patientRef.collection('reports').doc();
 
-      // ✅ STEP 1: Update Main Doc (FOR THE DASHBOARD)
-      // We name the key 'aiReport' to match your React code exactly
       batch.update(patientRef, {
         'aiReport': report,
         'voiceNote': spokenText,
@@ -233,7 +230,7 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
         'lastVisitDays': 0,
       });
 
-      // ✅ STEP 2: Save to History (FOR ARCHIVE)
+
       batch.set(reportHistoryRef, {
         ...report,
         'time': DateTime.now().toIso8601String(),

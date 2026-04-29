@@ -2,8 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-// DO NOT paste your long key here anymore!
-// This line below tells the app to go look inside the .env file.
+
 final String apiKey = dotenv.env['GEMINI_API_KEY'] ?? '';
 
 class GeminiService {
@@ -48,7 +47,7 @@ Return ONLY bullet points.
       final String text =
           data['candidates'][0]['content']['parts'][0]['text'] ?? "";
 
-      // FIX: Explicitly type the functions to (String e)
+     
       List<String> lines = text
           .split('\n')
           .map((String e) => e.trim()) // Clean whitespace
@@ -111,7 +110,7 @@ Return ONLY JSON:
       final String text =
           data['candidates'][0]['content']['parts'][0]['text'] ?? "";
 
-      // Clean up the JSON if AI wraps it in markdown blocks
+
       final cleaned = text
           .replaceAll("```json", "")
           .replaceAll("```", "")

@@ -8,10 +8,10 @@ import 'screens/login_screen.dart';
 import 'screens/splash_screen.dart';
 
 Future<void> main() async {
-  // 1. Initialize Flutter
+
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 2. Load the Secret Keys from .env
+
   try {
     await dotenv.load(fileName: ".env");
     print("✅ .env file loaded successfully");
@@ -19,7 +19,6 @@ Future<void> main() async {
     print("❌ Error loading .env file: $e");
   }
 
-  // 3. Initialize Firebase
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   runApp(const MyApp());
